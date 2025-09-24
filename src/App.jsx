@@ -1,35 +1,365 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import "./App.css";
+import Upload, { Creat, Url, Warn } from "./assets/Icons";
+import { PiWarningCircleLight } from "react-icons/pi";
+import { FiDownload, FiTrash2 } from "react-icons/fi";
+import { IoCopyOutline } from "react-icons/io5";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [lifetime, setLifetime] = useState("");
+  const [maxViews, setMaxViews] = useState("10");
+  const [message, setMessage] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [ipRestrictions, setIpRestrictions] = useState("");
+  const [errors, setErrors] = useState({});
+  const [created, setCreated] = useState(false);
+  const [secretUrl, setSecretUrl] = useState("");
+
+  const clampViews = (value) => {
+    const numeric = Number.isNaN(Number(value)) ? 1 : parseInt(value, 10);
+    return Math.max(1, numeric);
+  };
+
+  const handleMaxViewsChange = (e) => {
+    setMaxViews(e.target.value);
+  };
+
+  const incrementViews = () => {
+    setMaxViews((prev) => String(clampViews(prev) + 1));
+  };
+
+  const decrementViews = () => {
+    setMaxViews((prev) => String(Math.max(1, clampViews(prev) - 1)));
+  };
+
+  const validate = () => {
+    const nextErrors = {};
+    if (!message.trim()) nextErrors.message = "Message is required";
+    if (!maxViews || clampViews(maxViews) < 1)
+      nextErrors.maxViews = "Enter at least 1 view";
+    if (password && password !== confirmPassword)
+      nextErrors.confirmPassword = "Passwords do not match";
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const createSecret = () => {
+    if (!validate()) return;
+    const id = Math.random().toString(36).slice(2, 7);
+    const url = `https://www.gtransfer.io/${id}`;
+    setSecretUrl(url);
+    setCreated(true);
+  };
+
+  const copyUrl = async () => {
+    if (!secretUrl) return;
+    try {
+      await navigator.clipboard.writeText(secretUrl);
+    } catch (e) {
+      // no-op fallback
+    }
+  };
+
+  const resetForm = () => {
+    setMessage("");
+    setLifetime("");
+    setMaxViews("10");
+    setPassword("");
+    setConfirmPassword("");
+    setIpRestrictions("");
+    setErrors({});
+    setCreated(false);
+    setSecretUrl("");
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
+    <div className="min-h-screen bg-black flex flex-col items-center px-4 pt-10 pb-16">
+      {/* Logo + Title */}
+      <div className="text-center mb-8">
+        <img src="/logo.png" alt="Logo" className="mx-auto w-auto h-16 mb-2" />
+        <p className="text-gray-300  mx-auto font-[400] text-[20px] md:text-[28px]">
+          Send notes and files anonymously with self-
+          <br className="hidden sm:block" />
+          destruct system
         </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+
+      {/* Main Card */}
+      <div className="w-full max-w-3xl bg-[#0e0e0e] border border-zinc-800 rounded-2xl shadow-xl p-6 md:p-8 space-y-6">
+        {!created ? (
+          <>
+            {/* Message */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-white">New Message</label>
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-gray-300">
+                    <Warn />
+                  </span>
+                  <span>
+                    <span className="text-white md:block hidden">Tip: </span>
+                    <span className="md:block hidden">
+                      If you want to achieve top security use{" "}
+                    </span>
+                    <span className="text-yellow-400 cursor-pointer underline">
+                      {" "}
+                      neuro RSA
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <textarea
+                placeholder="Write your message here..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className={`w-full h-28 rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  errors.message ? "border-red-500" : "border-zinc-800"
+                }`}
+              />
+              {errors.message && (
+                <p className="text-xs text-red-500 mt-1">{errors.message}</p>
+              )}
+            </div>
+
+            {/* File Upload */}
+            <div>
+              <label className="text-white block mb-2">Upload a File</label>
+              <div className="w-full h-28 border-2 border-dashed border-zinc-700 flex gap-2 items-center justify-center text-gray-400 rounded-md cursor-pointer hover:border-purple-500 transition">
+                <Upload />
+                <p className="text-sm">
+                  Drag and drop file here or{" "}
+                  <span className="text-purple-400 cursor-pointer underline">
+                    Choose file
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {/* Lifetime + Max Views */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Lifetime */}
+              <div>
+                <label className="text-white block mb-2">Lifetime</label>
+                <div className="relative">
+                  <select
+                    value={lifetime}
+                    onChange={(e) => setLifetime(e.target.value)}
+                    className={`w-full appearance-none rounded-md bg-black/80 border p-3 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-200 ${
+                      errors.lifetime ? "border-red-500" : "border-zinc-800"
+                    }`}
+                  >
+                    <option value="">Null</option>
+                    <option value="">5 Minute</option>
+                    <option value="30m">30 Minute</option>
+                    <option value="1h">1 Hour</option>
+                    <option value="24h">24 Hour</option>
+                  </select>
+                  <svg
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-200"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Max Views */}
+              <div>
+                <label className="text-white block mb-2">Max Views</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    value={maxViews}
+                    onChange={handleMaxViewsChange}
+                    className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 pr-14 focus:outline-none focus:ring-2 focus:ring-purple-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                      errors.maxViews ? "border-red-500" : "border-zinc-800"
+                    }`}
+                  />
+                  <div className="absolute inset-y-0 right-1 flex flex-col justify-center gap-1 py-1">
+                    <button
+                      type="button"
+                      onClick={incrementViews}
+                      className="h-3 w-7 rounded-sm cursor-pointer text-gray-200 flex items-center justify-center"
+                      aria-label="Increase"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-4 w-4"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.23 12.29a.75.75 0 0 0 1.06 0L10 8.59l3.71 3.7a.75.75 0 1 0 1.06-1.06l-4.24-4.24a.75.75 0 0 0-1.06 0L5.23 11.23a.75.75 0 0 0 0 1.06Z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={decrementViews}
+                      className="h-3 w-7 rounded-sm cursor-pointer  text-gray-200 flex items-center justify-center"
+                      aria-label="Decrease"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-4 w-4"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M14.77 7.71a.75.75 0 0 0-1.06 0L10 11.41 6.29 7.7a.75.75 0 0 0-1.06 1.06l4.24 4.24a.75.75 0 0 0 1.06 0l4.24-4.24a.75.75 0 0 0 0-1.06Z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Password + Confirm */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-white  mb-2">
+                  <span> Password </span>
+                  <span className="text-gray-500 text-sm">( Optional )</span>
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="text-white flex justify-between items-center mb-2">
+                  <span> Confirm Password </span>
+                  <span className="text-gray-500 text-sm">( Optional )</span>
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    errors.confirmPassword
+                      ? "border-red-500"
+                      : "border-zinc-800"
+                  }`}
+                />
+                {errors.confirmPassword && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div>
+                <label className="text-white flex mb-2 justify-between items-center">
+                  <span> IP restrictions</span>
+                  <span className="text-gray-500 text-sm">( Optional )</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter allowed IPs"
+                  value={ipRestrictions}
+                  onChange={(e) => setIpRestrictions(e.target.value)}
+                  className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <button
+                  onClick={createSecret}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-2.5 cursor-pointer rounded-md transition"
+                >
+                  Create a Secret Link
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Created View */}
+            <div>
+              <label className="text-white mb-2 flex items-center gap-2">
+                Your secret URL <Url />
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  readOnly
+                  value={secretUrl}
+                  className="w-full rounded-md bg-[#161616] border border-zinc-800 text-gray-300 p-3 pr-12"
+                />
+                <button
+                  onClick={copyUrl}
+                  className="absolute cursor-pointer right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-white"
+                >
+                  <IoCopyOutline />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex md:flex-row flex-col items-center justify-center gap-8 pt-2">
+              <div className="">
+                <p className="text-gray-300 text-sm mb-2">
+                  Access with QR code
+                </p>
+                <img
+                  alt="QR"
+                  className="w-48 h-48"
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+                    secretUrl
+                  )}`}
+                />
+              </div>
+              <div className="flex flex-col items-center gap-1 text-gray-400">
+                <FiDownload className="text-xl" />
+                <a
+                  href={`https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=${encodeURIComponent(
+                    secretUrl
+                  )}`}
+                  download="qrcode.png"
+                  className="underline"
+                >
+                  Download
+                </a>
+              </div>
+            </div>
+
+            <div className="flex md:flex-row flex-col items-center justify-center gap-4 pt-2">
+              <button
+                onClick={resetForm}
+                className="flex w-full md:w-auto justify-center items-center gap-2 bg-red-500/90 cursor-pointer hover:bg-red-600 text-white px-10 py-2.5 rounded-md"
+              >
+                <FiTrash2 />
+                Delete
+              </button>
+              <button
+                onClick={resetForm}
+                className="flex w-full md:w-auto justify-center gap-2 items-center bg-purple-600 hover:bg-purple-700 cursor-pointer text-white font-semibold px-10 py-2.5 rounded-md"
+              >
+                <Creat />
+                Create New
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
