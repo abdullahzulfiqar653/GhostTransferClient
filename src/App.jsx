@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import "./App.css";
 import Upload, { Creat, Url, Warn } from "./assets/Icons";
 import { PiWarningCircleLight } from "react-icons/pi";
@@ -6,6 +7,7 @@ import { FiDownload, FiTrash2 } from "react-icons/fi";
 import { IoCopyOutline, IoCheckmarkOutline } from "react-icons/io5";
 
 function App() {
+  const navigate = useNavigate();
   const lifetimeOptions = [
     { value: "", label: "No Limit" },
     { value: "5m", label: "5 Minute" },
@@ -94,6 +96,9 @@ function App() {
     const url = `https://www.gtransfer.io/${id}`;
     setSecretUrl(url);
     setCreated(true);
+
+    // Navigate to created page with navigation state (no local storage)
+    navigate(`/created`, { state: { id, secretUrl: url } });
   };
 
   const copyUrl = async () => {
@@ -175,402 +180,321 @@ function App() {
 
       {/* Main Card */}
       <div className="w-full max-w-4xl bg-[#0e0e0e] border border-zinc-800 rounded-2xl shadow-xl p-6 md:p-8 space-y-6">
-        {!created ? (
-          <>
-            {/* Message */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-white">New Message</label>
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <Warn />
-                  <span className="flex items-center  gap-1">
-                    <span className="text-white md:block hidden">Tip: </span>
-                    <span className="md:block hidden">
-                      If you want to achieve top security use{" "}
-                    </span>
-                    <span className="text-yellow-400 cursor-pointer underline">
-                      {" "}
-                      neuro RSA
-                    </span>
-                  </span>
-                </div>
-              </div>
-              <textarea
-                placeholder="Write your message here..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className={`w-full h-28 rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
-                  errors.message ? "border-red-500" : "border-zinc-800"
-                }`}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-white">New Message</label>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <Warn />
+              <span className="flex items-center  gap-1">
+                <span className="text-white md:block hidden">Tip: </span>
+                <span className="md:block hidden">
+                  If you want to achieve top security use{" "}
+                </span>
+                <span className="text-yellow-400 cursor-pointer underline">
+                  {" "}
+                  neuro RSA
+                </span>
+              </span>
+            </div>
+          </div>
+          <textarea
+            placeholder="Write your message here..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className={`w-full h-28 rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
+              errors.message ? "border-red-500" : "border-zinc-800"
+            }`}
+          />
+          {errors.message && (
+            <p className="text-xs text-red-500 mt-1">{errors.message}</p>
+          )}
+        </div>
+        {/* File Upload */}
+        <div>
+          <label className="text-white block mb-2">Upload a File</label>
+          {files.length === 0 ? (
+            <label
+              onDrop={onDrop}
+              onDragOver={preventDefault}
+              onDragEnter={preventDefault}
+              className="w-full h-28 border-2 border-dashed border-zinc-700 flex gap-2 items-center justify-center text-gray-400 rounded-md cursor-pointer hover:border-brand transition"
+            >
+              <input
+                type="file"
+                multiple
+                onChange={onFileInputChange}
+                className="hidden"
               />
-              {errors.message && (
-                <p className="text-xs text-red-500 mt-1">{errors.message}</p>
-              )}
-            </div>
+              <Upload />
+              <p className="text-sm">
+                Drag and drop file here or{" "}
+                <span className="text-brand cursor-pointer underline">
+                  Choose file
+                </span>
+              </p>
+            </label>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label
+                onDrop={onDrop}
+                onDragOver={preventDefault}
+                onDragEnter={preventDefault}
+                className="min-h-48 h-48 md:h-full border-2 border-dashed border-zinc-700 flex flex-col gap-2 items-center justify-center text-gray-400 rounded-md cursor-pointer hover:border-brand transition"
+              >
+                <input
+                  type="file"
+                  multiple
+                  onChange={onFileInputChange}
+                  className="hidden"
+                />
+                <Upload />
+                <p className="text-sm text-center px-4">
+                  Upload Picture or{" "}
+                  <span className="text-brand underline">browse</span>
+                </p>
+              </label>
 
-            {/* File Upload */}
-            <div>
-              <label className="text-white block mb-2">Upload a File</label>
-              {files.length === 0 ? (
-                <label
-                  onDrop={onDrop}
-                  onDragOver={preventDefault}
-                  onDragEnter={preventDefault}
-                  className="w-full h-28 border-2 border-dashed border-zinc-700 flex gap-2 items-center justify-center text-gray-400 rounded-md cursor-pointer hover:border-brand transition"
-                >
-                  <input
-                    type="file"
-                    multiple
-                    onChange={onFileInputChange}
-                    className="hidden"
-                  />
-                  <Upload />
-                  <p className="text-sm">
-                    Drag and drop file here or{" "}
-                    <span className="text-brand cursor-pointer underline">
-                      Choose file
-                    </span>
-                  </p>
-                </label>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <label
-                    onDrop={onDrop}
-                    onDragOver={preventDefault}
-                    onDragEnter={preventDefault}
-                    className="min-h-48 h-48 md:h-full border-2 border-dashed border-zinc-700 flex flex-col gap-2 items-center justify-center text-gray-400 rounded-md cursor-pointer hover:border-brand transition"
+              <div className="md:col-span-2 h-[220px] overflow-auto custom-scrollbar grid grid-cols-2 lg:grid-cols-3 gap-4">
+                {files.map((f) => (
+                  <div
+                    key={f.id}
+                    className={`rounded-md border ${
+                      f.status === "error"
+                        ? "border-red-500"
+                        : "border-zinc-800"
+                    } bg-black/80 px-4 py-3 text-gray-200 relative`}
                   >
-                    <input
-                      type="file"
-                      multiple
-                      onChange={onFileInputChange}
-                      className="hidden"
-                    />
-                    <Upload />
-                    <p className="text-sm text-center px-4">
-                      Upload Picture or{" "}
-                      <span className="text-brand underline">browse</span>
-                    </p>
-                  </label>
-
-                  <div className="md:col-span-2 h-[220px] overflow-auto custom-scrollbar grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    {files.map((f) => (
-                      <div
-                        key={f.id}
-                        className={`rounded-md border ${
-                          f.status === "error"
-                            ? "border-red-500"
-                            : "border-zinc-800"
-                        } bg-black/80 px-4 py-3 text-gray-200 relative`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm truncate">{f.name}</p>
-                            <p className="text-xs text-gray-400">
-                              {formatBytes(f.size)}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeFile(f.id)}
-                            className="cursor-pointer"
-                            title="Remove"
-                          >
-                            <FiTrash2 className="text-red-800" />
-                          </button>
-                        </div>
-                        {f.status === "error" && (
-                          <p className="mt-2 text-xs text-red-500 flex items-center gap-1">
-                            <PiWarningCircleLight className="inline" /> Failed,
-                            try again
-                          </p>
-                        )}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm truncate">{f.name}</p>
+                        <p className="text-xs text-gray-400">
+                          {formatBytes(f.size)}
+                        </p>
                       </div>
-                    ))}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(f.id)}
+                        className="cursor-pointer"
+                        title="Remove"
+                      >
+                        <FiTrash2 className="text-red-800" />
+                      </button>
+                    </div>
+                    {f.status === "error" && (
+                      <p className="mt-2 text-xs text-red-500 flex items-center gap-1">
+                        <PiWarningCircleLight className="inline" /> Failed, try
+                        again
+                      </p>
+                    )}
                   </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Lifetime + Max Views */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Lifetime */}
+          <div>
+            <label className="text-white block mb-2">Lifetime</label>
+            <div className="relative" ref={lifetimeRef}>
+              <button
+                type="button"
+                onClick={() => setIsLifetimeOpen((v) => !v)}
+                className={`w-full flex items-center justify-between gap-2 rounded-md bg-black/80 border p-3 focus:outline-none focus:ring-2 focus:ring-brand text-gray-200 ${
+                  errors.lifetime ? "border-red-500" : "border-zinc-800"
+                }`}
+                aria-haspopup="listbox"
+                aria-expanded={isLifetimeOpen}
+              >
+                <span className="truncate">{selectedLifetimeLabel}</span>
+                <svg
+                  className="h-4 w-4 text-gray-200"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+
+              {isLifetimeOpen && (
+                <div
+                  role="listbox"
+                  className="absolute z-20 bottom-full mb-2 w-full rounded-2xl bg-[#171717] border border-zinc-800 shadow-xl overflow-hidden"
+                >
+                  {lifetimeOptions.map((opt, idx) => {
+                    const isSelected = opt.value === lifetime;
+                    return (
+                      <button
+                        type="button"
+                        key={opt.value + idx}
+                        onClick={() => {
+                          setLifetime(opt.value);
+                          setIsLifetimeOpen(false);
+                        }}
+                        className={`${
+                          isSelected
+                            ? "bg-brand text-white"
+                            : "bg-transparent text-gray-200 hover:bg-zinc-800"
+                        } w-full text-left px-4 py-3`}
+                        role="option"
+                        aria-selected={isSelected}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Lifetime + Max Views */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Lifetime */}
-              <div>
-                <label className="text-white block mb-2">Lifetime</label>
-                <div className="relative" ref={lifetimeRef}>
+          {/* Max Views */}
+          <div>
+            <div className="flex items-center justify-between mb-2 cursor-pointer">
+              <label className="text-white">Max Views</label>
+              <button
+                type="button"
+                onClick={toggleUnlimitedViews}
+                className={`text-sm px-2 py-0.5 rounded-md border ${
+                  isUnlimitedViews
+                    ? "border-brand text-gray-200"
+                    : "border-zinc-700 text-gray-300"
+                }`}
+                title="Set to unlimited"
+              >
+                ∞ Unlimited
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={isUnlimitedViews ? "" : maxViews}
+                onChange={handleMaxViewsChange}
+                disabled={isUnlimitedViews}
+                placeholder={isUnlimitedViews ? "" : undefined}
+                className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 pr-14 focus:outline-none focus:ring-2 focus:ring-brand [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                  errors.maxViews ? "border-red-500" : "border-zinc-800"
+                } ${isUnlimitedViews ? "opacity-60 cursor-not-allowed" : ""}`}
+              />
+              {isUnlimitedViews && (
+                <span
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-200"
+                  aria-hidden="true"
+                >
+                  ∞
+                </span>
+              )}
+
+              {!isUnlimitedViews && (
+                <div className="absolute inset-y-0 right-1 flex flex-col justify-center gap-1 py-1">
                   <button
                     type="button"
-                    onClick={() => setIsLifetimeOpen((v) => !v)}
-                    className={`w-full flex items-center justify-between gap-2 rounded-md bg-black/80 border p-3 focus:outline-none focus:ring-2 focus:ring-brand text-gray-200 ${
-                      errors.lifetime ? "border-red-500" : "border-zinc-800"
-                    }`}
-                    aria-haspopup="listbox"
-                    aria-expanded={isLifetimeOpen}
+                    onClick={incrementViews}
+                    className="h-3 w-7 rounded-sm cursor-pointer text-gray-200 flex items-center justify-center"
+                    aria-label="Increase"
                   >
-                    <span className="truncate">{selectedLifetimeLabel}</span>
                     <svg
-                      className="h-4 w-4 text-gray-200"
+                      xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                       fill="currentColor"
-                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
                     >
                       <path
                         fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                        d="M5.23 12.29a.75.75 0 0 0 1.06 0L10 8.59l3.71 3.7a.75.75 0 1 0 1.06-1.06l-4.24-4.24a.75.75 0 0 0-1.06 0L5.23 11.23a.75.75 0 0 0 0 1.06Z"
                         clipRule="evenodd"
                       />
                     </svg>
                   </button>
-
-                  {isLifetimeOpen && (
-                    <div
-                      role="listbox"
-                      className="absolute z-20 bottom-full mb-2 w-full rounded-2xl bg-[#171717] border border-zinc-800 shadow-xl overflow-hidden"
-                    >
-                      {lifetimeOptions.map((opt, idx) => {
-                        const isSelected = opt.value === lifetime;
-                        return (
-                          <button
-                            type="button"
-                            key={opt.value + idx}
-                            onClick={() => {
-                              setLifetime(opt.value);
-                              setIsLifetimeOpen(false);
-                            }}
-                            className={`${
-                              isSelected
-                                ? "bg-brand text-white"
-                                : "bg-transparent text-gray-200 hover:bg-zinc-800"
-                            } w-full text-left px-4 py-3`}
-                            role="option"
-                            aria-selected={isSelected}
-                          >
-                            {opt.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Max Views */}
-              <div>
-                <div className="flex items-center justify-between mb-2 cursor-pointer">
-                  <label className="text-white">Max Views</label>
                   <button
                     type="button"
-                    onClick={toggleUnlimitedViews}
-                    className={`text-sm px-2 py-0.5 rounded-md border ${
-                      isUnlimitedViews
-                        ? "border-brand text-gray-200"
-                        : "border-zinc-700 text-gray-300"
-                    }`}
-                    title="Set to unlimited"
+                    onClick={decrementViews}
+                    className="h-3 w-7 rounded-sm cursor-pointer  text-gray-200 flex items-center justify-center"
+                    aria-label="Decrease"
                   >
-                    ∞ Unlimited
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="h-4 w-4"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M14.77 7.71a.75.75 0 0 0-1.06 0L10 11.41 6.29 7.7a.75.75 0 0 0-1.06 1.06l4.24 4.24a.75.75 0 0 0 1.06 0l4.24-4.24a.75.75 0 0 0 0-1.06Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   </button>
                 </div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    value={isUnlimitedViews ? "" : maxViews}
-                    onChange={handleMaxViewsChange}
-                    disabled={isUnlimitedViews}
-                    placeholder={isUnlimitedViews ? "" : undefined}
-                    className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 pr-14 focus:outline-none focus:ring-2 focus:ring-brand [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                      errors.maxViews ? "border-red-500" : "border-zinc-800"
-                    } ${
-                      isUnlimitedViews ? "opacity-60 cursor-not-allowed" : ""
-                    }`}
-                  />
-                  {isUnlimitedViews && (
-                    <span
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-200"
-                      aria-hidden="true"
-                    >
-                      ∞
-                    </span>
-                  )}
-
-                  {!isUnlimitedViews && (
-                    <div className="absolute inset-y-0 right-1 flex flex-col justify-center gap-1 py-1">
-                      <button
-                        type="button"
-                        onClick={incrementViews}
-                        className="h-3 w-7 rounded-sm cursor-pointer text-gray-200 flex items-center justify-center"
-                        aria-label="Increase"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          className="h-4 w-4"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M5.23 12.29a.75.75 0 0 0 1.06 0L10 8.59l3.71 3.7a.75.75 0 1 0 1.06-1.06l-4.24-4.24a.75.75 0 0 0-1.06 0L5.23 11.23a.75.75 0 0 0 0 1.06Z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={decrementViews}
-                        className="h-3 w-7 rounded-sm cursor-pointer  text-gray-200 flex items-center justify-center"
-                        aria-label="Decrease"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          className="h-4 w-4"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M14.77 7.71a.75.75 0 0 0-1.06 0L10 11.41 6.29 7.7a.75.75 0 0 0-1.06 1.06l4.24 4.24a.75.75 0 0 0 1.06 0l4.24-4.24a.75.75 0 0 0 0-1.06Z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
-
-            {/* Password + Confirm */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-white  mb-2">
-                  <span> Password </span>
-                  <span className="text-gray-500 text-sm">( Optional )</span>
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
-                />
-              </div>
-              <div>
-                <label className="text-white flex justify-between items-center mb-2">
-                  <span> Confirm Password </span>
-                  <span className="text-gray-500 text-sm">( Optional )</span>
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
-                    errors.confirmPassword
-                      ? "border-red-500"
-                      : "border-zinc-800"
-                  }`}
-                />
-                {errors.confirmPassword && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.confirmPassword}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-              <div>
-                <label className="text-white flex mb-2 justify-between items-center">
-                  <span> IP restrictions</span>
-                  <span className="text-gray-500 text-sm">( Optional )</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter allowed IPs"
-                  value={ipRestrictions}
-                  onChange={(e) => setIpRestrictions(e.target.value)}
-                  className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
-                />
-              </div>
-              <div>
-                <button
-                  onClick={createSecret}
-                  className="w-full bg-brand hover:bg-brand-dark text-white font-semibold px-8 py-2.5 cursor-pointer rounded-md transition"
-                >
-                  Create a Secret Link
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Created View */}
-            <div>
-              <label className="text-white mb-2 flex items-center gap-2">
-                Your secret URL <Url />
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  readOnly
-                  value={secretUrl}
-                  className="w-full rounded-md bg-[#161616] border border-zinc-800 text-gray-300 p-3 pr-12"
-                />
-                <button
-                  onClick={copyUrl}
-                  className="absolute cursor-pointer right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-white"
-                  title={copied ? "Copied" : "Copy"}
-                >
-                  {copied ? <IoCheckmarkOutline /> : <IoCopyOutline />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex md:flex-row flex-col items-center justify-center gap-8 pt-2">
-              <div className="ml-20">
-                <p className="text-gray-300 text-sm mb-2">
-                  Access with QR code
-                </p>
-                <img
-                  alt="QR"
-                  className="w-48 h-48"
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                    secretUrl
-                  )}`}
-                />
-              </div>
-              <div className="flex flex-col items-center gap-1 text-gray-400">
-                <FiDownload className="text-xl" />
-                <a
-                  href={`https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=${encodeURIComponent(
-                    secretUrl
-                  )}`}
-                  download="qrcode.png"
-                  className="underline"
-                >
-                  Download
-                </a>
-              </div>
-            </div>
-
-            <div className="flex md:flex-row flex-col items-center justify-center gap-4 pt-2">
-              <button
-                onClick={resetForm}
-                className="flex w-full md:w-auto justify-center items-center gap-2 bg-red-500/90 cursor-pointer hover:bg-red-600 text-white px-10 py-2.5 rounded-md"
-              >
-                <FiTrash2 />
-                Delete
-              </button>
-              <button
-                onClick={resetForm}
-                className="flex w-full md:w-auto justify-center gap-2 items-center bg-brand hover:bg-brand-dark cursor-pointer text-white font-semibold px-10 py-2.5 rounded-md"
-              >
-                <Creat />
-                Create New
-              </button>
-            </div>
-          </>
-        )}
+          </div>
+        </div>
+        {/* Password + Confirm */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-white  mb-2">
+              <span> Password </span>
+              <span className="text-gray-500 text-sm">( Optional )</span>
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
+            />
+          </div>
+          <div>
+            <label className="text-white flex justify-between items-center mb-2">
+              <span> Confirm Password </span>
+              <span className="text-gray-500 text-sm">( Optional )</span>
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
+                errors.confirmPassword ? "border-red-500" : "border-zinc-800"
+              }`}
+            />
+            {errors.confirmPassword && (
+              <p className="text-xs text-red-500 mt-1">
+                {errors.confirmPassword}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div>
+            <label className="text-white flex mb-2 justify-between items-center">
+              <span> IP restrictions</span>
+              <span className="text-gray-500 text-sm">( Optional )</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Enter allowed IPs"
+              value={ipRestrictions}
+              onChange={(e) => setIpRestrictions(e.target.value)}
+              className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
+            />
+          </div>
+          <div>
+            <button
+              onClick={createSecret}
+              className="w-full bg-brand hover:bg-brand-dark text-white font-semibold px-8 py-2.5 cursor-pointer rounded-md transition"
+            >
+              Create a Secret Link
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
