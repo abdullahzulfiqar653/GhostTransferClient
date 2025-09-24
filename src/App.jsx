@@ -1,13 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import Upload, { Creat, Url, Warn } from "./assets/Icons";
 import { PiWarningCircleLight } from "react-icons/pi";
 import { FiDownload, FiTrash2 } from "react-icons/fi";
-import { IoCopyOutline } from "react-icons/io5";
+import { IoCopyOutline, IoCheckmarkOutline } from "react-icons/io5";
 
 function App() {
+  const lifetimeOptions = [
+    { value: "", label: "No Limit" },
+    { value: "5m", label: "5 Minute" },
+    { value: "30m", label: "30 Minute" },
+    { value: "1h", label: "1 Hour" },
+    { value: "4h", label: "4 Hour" },
+    { value: "12h", label: "12 Hour" },
+    { value: "1d", label: "1 Day" },
+    { value: "3d", label: "3 Day" },
+    { value: "7d", label: "7 Day" },
+  ];
   const [lifetime, setLifetime] = useState("");
   const [maxViews, setMaxViews] = useState("10");
+  const [isUnlimitedViews, setIsUnlimitedViews] = useState(false);
   const [message, setMessage] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -15,6 +27,23 @@ function App() {
   const [errors, setErrors] = useState({});
   const [created, setCreated] = useState(false);
   const [secretUrl, setSecretUrl] = useState("");
+  const [files, setFiles] = useState([]);
+  const [copied, setCopied] = useState(false);
+  const [isLifetimeOpen, setIsLifetimeOpen] = useState(false);
+  const lifetimeRef = useRef(null);
+
+  const selectedLifetimeLabel =
+    lifetimeOptions.find((o) => o.value === lifetime)?.label || "No Limit";
+
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (lifetimeRef.current && !lifetimeRef.current.contains(e.target)) {
+        setIsLifetimeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
 
   const clampViews = (value) => {
     const numeric = Number.isNaN(Number(value)) ? 1 : parseInt(value, 10);
@@ -22,6 +51,7 @@ function App() {
   };
 
   const handleMaxViewsChange = (e) => {
+    setIsUnlimitedViews(false);
     setMaxViews(e.target.value);
   };
 
@@ -33,11 +63,25 @@ function App() {
     setMaxViews((prev) => String(Math.max(1, clampViews(prev) - 1)));
   };
 
+  const toggleUnlimitedViews = () => {
+    setIsUnlimitedViews((prev) => {
+      const next = !prev;
+      if (next) {
+        setMaxViews("");
+      } else {
+        setMaxViews((val) => String(clampViews(val || 1)));
+      }
+      return next;
+    });
+  };
+
   const validate = () => {
     const nextErrors = {};
     if (!message.trim()) nextErrors.message = "Message is required";
-    if (!maxViews || clampViews(maxViews) < 1)
-      nextErrors.maxViews = "Enter at least 1 view";
+    if (!isUnlimitedViews) {
+      if (!maxViews || clampViews(maxViews) < 1)
+        nextErrors.maxViews = "Enter at least 1 view";
+    }
     if (password && password !== confirmPassword)
       nextErrors.confirmPassword = "Passwords do not match";
     setErrors(nextErrors);
@@ -56,6 +100,8 @@ function App() {
     if (!secretUrl) return;
     try {
       await navigator.clipboard.writeText(secretUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1000);
     } catch (e) {
       // no-op fallback
     }
@@ -71,6 +117,48 @@ function App() {
     setErrors({});
     setCreated(false);
     setSecretUrl("");
+    setFiles([]);
+  };
+
+  const handleFileList = (fileList) => {
+    const incoming = Array.from(fileList || []).map((f) => ({
+      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${f.name}`,
+      file: f,
+      name: f.name,
+      size: f.size,
+      status: "ready",
+    }));
+    setFiles((prev) => [...prev, ...incoming]);
+  };
+
+  const onFileInputChange = (e) => {
+    handleFileList(e.target.files);
+    e.target.value = "";
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer && e.dataTransfer.files) {
+      handleFileList(e.dataTransfer.files);
+    }
+  };
+
+  const preventDefault = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const removeFile = (id) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const formatBytes = (bytes) => {
+    if (!bytes && bytes !== 0) return "";
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = bytes === 0 ? 0 : Math.floor(Math.log(bytes) / Math.log(1024));
+    const value = bytes / Math.pow(1024, i);
+    return `${value.toFixed(value >= 100 || i === 0 ? 0 : 1)} ${sizes[i]}`;
   };
 
   return (
@@ -86,7 +174,7 @@ function App() {
       </div>
 
       {/* Main Card */}
-      <div className="w-full max-w-3xl bg-[#0e0e0e] border border-zinc-800 rounded-2xl shadow-xl p-6 md:p-8 space-y-6">
+      <div className="w-full max-w-4xl bg-[#0e0e0e] border border-zinc-800 rounded-2xl shadow-xl p-6 md:p-8 space-y-6">
         {!created ? (
           <>
             {/* Message */}
@@ -94,10 +182,8 @@ function App() {
               <div className="flex items-center justify-between mb-2">
                 <label className="text-white">New Message</label>
                 <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-gray-300">
-                    <Warn />
-                  </span>
-                  <span>
+                  <Warn />
+                  <span className="flex items-center  gap-1">
                     <span className="text-white md:block hidden">Tip: </span>
                     <span className="md:block hidden">
                       If you want to achieve top security use{" "}
@@ -113,7 +199,7 @@ function App() {
                 placeholder="Write your message here..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className={`w-full h-28 rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                className={`w-full h-28 rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
                   errors.message ? "border-red-500" : "border-zinc-800"
                 }`}
               />
@@ -125,15 +211,85 @@ function App() {
             {/* File Upload */}
             <div>
               <label className="text-white block mb-2">Upload a File</label>
-              <div className="w-full h-28 border-2 border-dashed border-zinc-700 flex gap-2 items-center justify-center text-gray-400 rounded-md cursor-pointer hover:border-purple-500 transition">
-                <Upload />
-                <p className="text-sm">
-                  Drag and drop file here or{" "}
-                  <span className="text-purple-400 cursor-pointer underline">
-                    Choose file
-                  </span>
-                </p>
-              </div>
+              {files.length === 0 ? (
+                <label
+                  onDrop={onDrop}
+                  onDragOver={preventDefault}
+                  onDragEnter={preventDefault}
+                  className="w-full h-28 border-2 border-dashed border-zinc-700 flex gap-2 items-center justify-center text-gray-400 rounded-md cursor-pointer hover:border-brand transition"
+                >
+                  <input
+                    type="file"
+                    multiple
+                    onChange={onFileInputChange}
+                    className="hidden"
+                  />
+                  <Upload />
+                  <p className="text-sm">
+                    Drag and drop file here or{" "}
+                    <span className="text-brand cursor-pointer underline">
+                      Choose file
+                    </span>
+                  </p>
+                </label>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <label
+                    onDrop={onDrop}
+                    onDragOver={preventDefault}
+                    onDragEnter={preventDefault}
+                    className="min-h-48 h-48 md:h-full border-2 border-dashed border-zinc-700 flex flex-col gap-2 items-center justify-center text-gray-400 rounded-md cursor-pointer hover:border-brand transition"
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      onChange={onFileInputChange}
+                      className="hidden"
+                    />
+                    <Upload />
+                    <p className="text-sm text-center px-4">
+                      Upload Picture or{" "}
+                      <span className="text-brand underline">browse</span>
+                    </p>
+                  </label>
+
+                  <div className="md:col-span-2 h-[220px] overflow-auto custom-scrollbar grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {files.map((f) => (
+                      <div
+                        key={f.id}
+                        className={`rounded-md border ${
+                          f.status === "error"
+                            ? "border-red-500"
+                            : "border-zinc-800"
+                        } bg-black/80 px-4 py-3 text-gray-200 relative`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm truncate">{f.name}</p>
+                            <p className="text-xs text-gray-400">
+                              {formatBytes(f.size)}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(f.id)}
+                            className="cursor-pointer"
+                            title="Remove"
+                          >
+                            <FiTrash2 className="text-red-800" />
+                          </button>
+                        </div>
+                        {f.status === "error" && (
+                          <p className="mt-2 text-xs text-red-500 flex items-center gap-1">
+                            <PiWarningCircleLight className="inline" /> Failed,
+                            try again
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Lifetime + Max Views */}
@@ -141,89 +297,146 @@ function App() {
               {/* Lifetime */}
               <div>
                 <label className="text-white block mb-2">Lifetime</label>
-                <div className="relative">
-                  <select
-                    value={lifetime}
-                    onChange={(e) => setLifetime(e.target.value)}
-                    className={`w-full appearance-none rounded-md bg-black/80 border p-3 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-200 ${
+                <div className="relative" ref={lifetimeRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsLifetimeOpen((v) => !v)}
+                    className={`w-full flex items-center justify-between gap-2 rounded-md bg-black/80 border p-3 focus:outline-none focus:ring-2 focus:ring-brand text-gray-200 ${
                       errors.lifetime ? "border-red-500" : "border-zinc-800"
                     }`}
+                    aria-haspopup="listbox"
+                    aria-expanded={isLifetimeOpen}
                   >
-                    <option value="">Null</option>
-                    <option value="">5 Minute</option>
-                    <option value="30m">30 Minute</option>
-                    <option value="1h">1 Hour</option>
-                    <option value="24h">24 Hour</option>
-                  </select>
-                  <svg
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-200"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                    <span className="truncate">{selectedLifetimeLabel}</span>
+                    <svg
+                      className="h-4 w-4 text-gray-200"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  {isLifetimeOpen && (
+                    <div
+                      role="listbox"
+                      className="absolute z-20 bottom-full mb-2 w-full rounded-2xl bg-[#171717] border border-zinc-800 shadow-xl overflow-hidden"
+                    >
+                      {lifetimeOptions.map((opt, idx) => {
+                        const isSelected = opt.value === lifetime;
+                        return (
+                          <button
+                            type="button"
+                            key={opt.value + idx}
+                            onClick={() => {
+                              setLifetime(opt.value);
+                              setIsLifetimeOpen(false);
+                            }}
+                            className={`${
+                              isSelected
+                                ? "bg-brand text-white"
+                                : "bg-transparent text-gray-200 hover:bg-zinc-800"
+                            } w-full text-left px-4 py-3`}
+                            role="option"
+                            aria-selected={isSelected}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Max Views */}
               <div>
-                <label className="text-white block mb-2">Max Views</label>
+                <div className="flex items-center justify-between mb-2 cursor-pointer">
+                  <label className="text-white">Max Views</label>
+                  <button
+                    type="button"
+                    onClick={toggleUnlimitedViews}
+                    className={`text-sm px-2 py-0.5 rounded-md border ${
+                      isUnlimitedViews
+                        ? "border-brand text-gray-200"
+                        : "border-zinc-700 text-gray-300"
+                    }`}
+                    title="Set to unlimited"
+                  >
+                    ∞ Unlimited
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type="number"
                     inputMode="numeric"
                     min={1}
-                    value={maxViews}
+                    value={isUnlimitedViews ? "" : maxViews}
                     onChange={handleMaxViewsChange}
-                    className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 pr-14 focus:outline-none focus:ring-2 focus:ring-purple-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                    disabled={isUnlimitedViews}
+                    placeholder={isUnlimitedViews ? "" : undefined}
+                    className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 pr-14 focus:outline-none focus:ring-2 focus:ring-brand [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                       errors.maxViews ? "border-red-500" : "border-zinc-800"
+                    } ${
+                      isUnlimitedViews ? "opacity-60 cursor-not-allowed" : ""
                     }`}
                   />
-                  <div className="absolute inset-y-0 right-1 flex flex-col justify-center gap-1 py-1">
-                    <button
-                      type="button"
-                      onClick={incrementViews}
-                      className="h-3 w-7 rounded-sm cursor-pointer text-gray-200 flex items-center justify-center"
-                      aria-label="Increase"
+                  {isUnlimitedViews && (
+                    <span
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-200"
+                      aria-hidden="true"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-4 w-4"
+                      ∞
+                    </span>
+                  )}
+
+                  {!isUnlimitedViews && (
+                    <div className="absolute inset-y-0 right-1 flex flex-col justify-center gap-1 py-1">
+                      <button
+                        type="button"
+                        onClick={incrementViews}
+                        className="h-3 w-7 rounded-sm cursor-pointer text-gray-200 flex items-center justify-center"
+                        aria-label="Increase"
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.23 12.29a.75.75 0 0 0 1.06 0L10 8.59l3.71 3.7a.75.75 0 1 0 1.06-1.06l-4.24-4.24a.75.75 0 0 0-1.06 0L5.23 11.23a.75.75 0 0 0 0 1.06Z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={decrementViews}
-                      className="h-3 w-7 rounded-sm cursor-pointer  text-gray-200 flex items-center justify-center"
-                      aria-label="Decrease"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="h-4 w-4"
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="h-4 w-4"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M5.23 12.29a.75.75 0 0 0 1.06 0L10 8.59l3.71 3.7a.75.75 0 1 0 1.06-1.06l-4.24-4.24a.75.75 0 0 0-1.06 0L5.23 11.23a.75.75 0 0 0 0 1.06Z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={decrementViews}
+                        className="h-3 w-7 rounded-sm cursor-pointer  text-gray-200 flex items-center justify-center"
+                        aria-label="Decrease"
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M14.77 7.71a.75.75 0 0 0-1.06 0L10 11.41 6.29 7.7a.75.75 0 0 0-1.06 1.06l4.24 4.24a.75.75 0 0 0 1.06 0l4.24-4.24a.75.75 0 0 0 0-1.06Z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="h-4 w-4"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M14.77 7.71a.75.75 0 0 0-1.06 0L10 11.41 6.29 7.7a.75.75 0 0 0-1.06 1.06l4.24 4.24a.75.75 0 0 0 1.06 0l4.24-4.24a.75.75 0 0 0 0-1.06Z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -239,7 +452,7 @@ function App() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
                 />
               </div>
               <div>
@@ -251,7 +464,7 @@ function App() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
                     errors.confirmPassword
                       ? "border-red-500"
                       : "border-zinc-800"
@@ -276,13 +489,13 @@ function App() {
                   placeholder="Enter allowed IPs"
                   value={ipRestrictions}
                   onChange={(e) => setIpRestrictions(e.target.value)}
-                  className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
                 />
               </div>
               <div>
                 <button
                   onClick={createSecret}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-2.5 cursor-pointer rounded-md transition"
+                  className="w-full bg-brand hover:bg-brand-dark text-white font-semibold px-8 py-2.5 cursor-pointer rounded-md transition"
                 >
                   Create a Secret Link
                 </button>
@@ -306,14 +519,15 @@ function App() {
                 <button
                   onClick={copyUrl}
                   className="absolute cursor-pointer right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-white"
+                  title={copied ? "Copied" : "Copy"}
                 >
-                  <IoCopyOutline />
+                  {copied ? <IoCheckmarkOutline /> : <IoCopyOutline />}
                 </button>
               </div>
             </div>
 
             <div className="flex md:flex-row flex-col items-center justify-center gap-8 pt-2">
-              <div className="">
+              <div className="ml-20">
                 <p className="text-gray-300 text-sm mb-2">
                   Access with QR code
                 </p>
@@ -349,7 +563,7 @@ function App() {
               </button>
               <button
                 onClick={resetForm}
-                className="flex w-full md:w-auto justify-center gap-2 items-center bg-purple-600 hover:bg-purple-700 cursor-pointer text-white font-semibold px-10 py-2.5 rounded-md"
+                className="flex w-full md:w-auto justify-center gap-2 items-center bg-brand hover:bg-brand-dark cursor-pointer text-white font-semibold px-10 py-2.5 rounded-md"
               >
                 <Creat />
                 Create New

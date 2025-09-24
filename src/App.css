@@ -1,1 +1,69 @@
 @import "tailwindcss";
+
+/* Custom scrollbar styling */
+.custom-scrollbar {
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #0a0a0a;
+    /* thumb track */
+}
+
+/* Chromium, Safari, Edge */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #0a0a0a;
+    border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #a78bfa 0%, #d1d5db 100%);
+    border-radius: 9999px;
+    border: 2px solid #0a0a0a;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #e5e7eb 0%, #d1d5db 100%);
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* Brand color utilities */
+:root {
+    --brand: #9c1ee9;
+    --brand-dark: #7f0fd0;
+}
+
+.text-brand {
+    color: var(--brand);
+}
+
+.border-brand {
+    border-color: var(--brand);
+}
+
+.hover\:border-brand:hover {
+    border-color: var(--brand);
+}
+
+.bg-brand {
+    background-color: var(--brand);
+}
+
+.hover\:bg-brand-dark:hover {
+    background-color: var(--brand-dark);
+}
+
+/* Works with Tailwind ring utilities like focus:ring-2 */
+.ring-brand {
+    --tw-ring-color: var(--brand);
+}
+
+.focus\:ring-brand:focus {
+    --tw-ring-color: var(--brand);
+}
