@@ -20,8 +20,8 @@ function App() {
     { value: "7d", label: "7 Day" },
   ];
   const [lifetime, setLifetime] = useState("");
-  const [maxViews, setMaxViews] = useState("10");
-  const [isUnlimitedViews, setIsUnlimitedViews] = useState(false);
+  const [maxViews, setMaxViews] = useState("");
+  const [isUnlimitedViews, setIsUnlimitedViews] = useState(true);
   const [message, setMessage] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,6 +33,16 @@ function App() {
   const [copied, setCopied] = useState(false);
   const [isLifetimeOpen, setIsLifetimeOpen] = useState(false);
   const lifetimeRef = useRef(null);
+  const [isViewsOpen, setIsViewsOpen] = useState(false);
+  const viewsRef = useRef(null);
+
+  const viewOptions = [
+    { value: "unlimited", label: "∞" },
+    { value: 5, label: "5" },
+    { value: 10, label: "10" },
+    { value: 25, label: "25" },
+    { value: 100, label: "100" },
+  ];
 
   const selectedLifetimeLabel =
     lifetimeOptions.find((o) => o.value === lifetime)?.label || "No Limit";
@@ -41,6 +51,9 @@ function App() {
     const onClickOutside = (e) => {
       if (lifetimeRef.current && !lifetimeRef.current.contains(e.target)) {
         setIsLifetimeOpen(false);
+      }
+      if (viewsRef.current && !viewsRef.current.contains(e.target)) {
+        setIsViewsOpen(false);
       }
     };
     document.addEventListener("mousedown", onClickOutside);
@@ -115,7 +128,8 @@ function App() {
   const resetForm = () => {
     setMessage("");
     setLifetime("");
-    setMaxViews("10");
+    setMaxViews("");
+    setIsUnlimitedViews(true);
     setPassword("");
     setConfirmPassword("");
     setIpRestrictions("");
@@ -356,22 +370,8 @@ function App() {
 
           {/* Max Views */}
           <div>
-            <div className="flex items-center justify-between mb-2 cursor-pointer">
-              <label className="text-white">Max Views</label>
-              <button
-                type="button"
-                onClick={toggleUnlimitedViews}
-                className={`text-sm px-2 py-0.5 rounded-md border ${
-                  isUnlimitedViews
-                    ? "border-brand text-gray-200"
-                    : "border-zinc-700 text-gray-300"
-                }`}
-                title="Set to unlimited"
-              >
-                ∞ Unlimited
-              </button>
-            </div>
-            <div className="relative">
+            <label className="text-white block mb-2">Max Views</label>
+            <div className="relative mb-2" ref={viewsRef}>
               <input
                 type="number"
                 inputMode="numeric"
@@ -379,60 +379,69 @@ function App() {
                 value={isUnlimitedViews ? "" : maxViews}
                 onChange={handleMaxViewsChange}
                 disabled={isUnlimitedViews}
-                placeholder={isUnlimitedViews ? "" : undefined}
-                className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 pr-14 focus:outline-none focus:ring-2 focus:ring-brand [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                placeholder={isUnlimitedViews ? "∞" : "Enter views"}
+                className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 pr-10 focus:outline-none focus:ring-2 focus:ring-brand [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                   errors.maxViews ? "border-red-500" : "border-zinc-800"
                 } ${isUnlimitedViews ? "opacity-60 cursor-not-allowed" : ""}`}
               />
-              {isUnlimitedViews && (
-                <span
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-200"
-                  aria-hidden="true"
+              <button
+                type="button"
+                onClick={() => setIsViewsOpen((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-200"
+                aria-haspopup="listbox"
+                aria-expanded={isViewsOpen}
+                aria-label="Choose preset"
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
-                  ∞
-                </span>
-              )}
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
 
-              {!isUnlimitedViews && (
-                <div className="absolute inset-y-0 right-1 flex flex-col justify-center gap-1 py-1">
-                  <button
-                    type="button"
-                    onClick={incrementViews}
-                    className="h-3 w-7 rounded-sm cursor-pointer text-gray-200 flex items-center justify-center"
-                    aria-label="Increase"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="h-4 w-4"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 12.29a.75.75 0 0 0 1.06 0L10 8.59l3.71 3.7a.75.75 0 1 0 1.06-1.06l-4.24-4.24a.75.75 0 0 0-1.06 0L5.23 11.23a.75.75 0 0 0 0 1.06Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={decrementViews}
-                    className="h-3 w-7 rounded-sm cursor-pointer  text-gray-200 flex items-center justify-center"
-                    aria-label="Decrease"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="h-4 w-4"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M14.77 7.71a.75.75 0 0 0-1.06 0L10 11.41 6.29 7.7a.75.75 0 0 0-1.06 1.06l4.24 4.24a.75.75 0 0 0 1.06 0l4.24-4.24a.75.75 0 0 0 0-1.06Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
+              {isViewsOpen && (
+                <div
+                  role="listbox"
+                  className="absolute z-20 bottom-full mb-2 w-full rounded-2xl bg-[#171717] border border-zinc-800 shadow-xl overflow-hidden"
+                >
+                  {viewOptions.map((opt, idx) => {
+                    const isSelected =
+                      (opt.value === "unlimited" && isUnlimitedViews) ||
+                      (!isUnlimitedViews &&
+                        String(opt.value) === String(maxViews));
+                    return (
+                      <button
+                        type="button"
+                        key={String(opt.value) + idx}
+                        onClick={() => {
+                          if (opt.value === "unlimited") {
+                            setIsUnlimitedViews(true);
+                            setMaxViews("");
+                          } else {
+                            setIsUnlimitedViews(false);
+                            setMaxViews(String(opt.value));
+                          }
+                          setIsViewsOpen(false);
+                        }}
+                        className={`${
+                          isSelected
+                            ? "bg-brand text-white"
+                            : "bg-transparent text-gray-200 hover:bg-zinc-800"
+                        } w-full text-left px-4 py-3`}
+                        role="option"
+                        aria-selected={isSelected}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
