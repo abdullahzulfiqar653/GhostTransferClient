@@ -1,4 +1,4 @@
-name: CI/CD > Production Site 
+name: CI/CD > Production Site
 
 on:
   push:
@@ -6,10 +6,23 @@ on:
       - main
 
 jobs:
-  deploy:
-    name: Deploy React App
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps & build
+        run: |
+          npm ci
+          npm run build
+
       - name: Configure SSH
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
@@ -28,14 +41,11 @@ jobs:
             StrictHostKeyChecking no
           END
 
-      - name: Deploy to VPS
+      - name: Deploy built files
         run: |
           ssh target "
             set -e
-            cd /var/www/dev/ghosttransfer.tech/html || exit 1
-            git pull origin main
-            npm ci
-            npm run build
-            cp -r ./dist/* /var/www/dev/ghosttransfer.tech/html/dist/
-            nginx -t && systemctl reload nginx
+            rm -rf /var/www/dev/ghosttransfer.tech/html/dist/*
           "
+          scp -r ./dist/* target:/var/www/dev/ghosttransfer.tech/html/dist/
+          ssh target "nginx -t && systemctl reload nginx"
