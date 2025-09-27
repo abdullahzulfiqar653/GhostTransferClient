@@ -450,7 +450,7 @@ function App() {
         {/* Password + Confirm */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-white  mb-2">
+            <label className="block text-white mb-2">
               <span> Password </span>
               <span className="text-gray-500 text-sm">( Optional )</span>
             </label>
@@ -462,7 +462,7 @@ function App() {
             />
           </div>
           <div>
-            <label className="text-white flex justify-between items-center mb-2">
+            <label className="block text-white mb-2">
               <span> Confirm Password </span>
               <span className="text-gray-500 text-sm">( Optional )</span>
             </label>
