@@ -73,7 +73,7 @@ export default function Created() {
         </div>
 
         <div className="flex md:flex-row flex-col items-center justify-center gap-8 pt-2">
-          <div className="ml-20">
+          <div className="md:ml-20">
             <p className="text-gray-300 text-sm mb-2">Access with QR code</p>
             <img
               alt="QR"
