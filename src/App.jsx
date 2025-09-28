@@ -90,6 +90,21 @@ function App() {
     return Object.keys(nextErrors).length === 0;
   };
 
+  // Check if button should be disabled
+  const isButtonDisabled = () => {
+    // No files uploaded
+    if (uploadedUrls.length === 0) return true;
+
+    // Files are currently uploading
+    if (uploadingFiles.size > 0) return true;
+
+    // Any file has an error status
+    const hasErrorFiles = files.some((f) => f.status === "error");
+    if (hasErrorFiles) return true;
+
+    return false;
+  };
+
   const createSecret = async () => {
     if (!validate()) return;
 
@@ -648,7 +663,12 @@ function App() {
           <div>
             <button
               onClick={createSecret}
-              className="w-full bg-brand hover:bg-brand-dark text-white font-semibold px-8 py-2.5 cursor-pointer rounded-md transition"
+              disabled={isButtonDisabled()}
+              className={`w-full font-semibold px-8 py-2.5 rounded-md transition ${
+                isButtonDisabled()
+                  ? "bg-purple-700 text-gray-400 cursor-not-allowed"
+                  : "bg-brand hover:bg-brand-dark text-white cursor-pointer"
+              }`}
             >
               Create a Secret Link
             </button>

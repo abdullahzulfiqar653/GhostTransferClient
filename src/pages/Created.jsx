@@ -82,7 +82,7 @@ export default function Created() {
               alt="QR"
               className="w-48 h-48 border-6 border-white"
               src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                data?.id
+                URL
               )}`}
             />
           </div>
@@ -90,7 +90,7 @@ export default function Created() {
             <FiDownload className="text-xl" />
             <a
               href={`https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=${encodeURIComponent(
-                data?.id
+                URL
               )}`}
               download="qrcode.png"
               className="underline"
