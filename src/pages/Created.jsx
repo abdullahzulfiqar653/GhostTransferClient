@@ -77,7 +77,7 @@ export default function Created() {
             <p className="text-gray-300 text-sm mb-2">Access with QR code</p>
             <img
               alt="QR"
-              className="w-48 h-48"
+              className="w-48 h-48 border-6 border-white"
               src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
                 data.secretUrl
               )}`}
