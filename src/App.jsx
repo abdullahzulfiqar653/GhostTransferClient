@@ -286,10 +286,7 @@ function App() {
       <div className="w-full max-w-4xl bg-[#0e0e0e] border border-zinc-800 rounded-2xl shadow-xl p-6 md:p-8 space-y-6">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-white">
-              New Message{" "}
-              <span className="text-gray-500 text-sm">( Optional )</span>
-            </label>
+            <label className="text-white">New Message </label>
             <div className="flex items-center gap-2 text-xs text-gray-400">
               <Warn />
               <span className="flex items-center  gap-1">
