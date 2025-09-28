@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./App.css";
 import Upload, { Warn } from "./assets/Icons";
 import { PiWarningCircleLight } from "react-icons/pi";
-import { FiDownload, FiTrash2 } from "react-icons/fi";
+import { FiTrash2 } from "react-icons/fi";
 import {
   uploadFile,
   generateShareUrl,
@@ -32,10 +32,7 @@ function App() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [ipRestrictions, setIpRestrictions] = useState("");
   const [errors, setErrors] = useState({});
-  const [created, setCreated] = useState(false);
-  const [secretUrl, setSecretUrl] = useState("");
   const [files, setFiles] = useState([]);
-  const [copied, setCopied] = useState(false);
   const [isLifetimeOpen, setIsLifetimeOpen] = useState(false);
   const lifetimeRef = useRef(null);
   const [isViewsOpen, setIsViewsOpen] = useState(false);
@@ -118,9 +115,6 @@ function App() {
         result.id || result.url || Math.random().toString(36).slice(2, 7);
       const url = result.url || `https://www.gtransfer.io/${id}`;
 
-      setSecretUrl(url);
-      setCreated(true);
-
       // Navigate to created page with navigation state
       navigate(`/created`, { state: { id, secretUrl: url, result } });
     } catch (error) {
@@ -141,8 +135,6 @@ function App() {
     setConfirmPassword("");
     setIpRestrictions("");
     setErrors({});
-    setCreated(false);
-    setSecretUrl("");
     setFiles([]);
     setUploadingFiles(new Set());
     setUploadProgress({});
@@ -272,16 +264,17 @@ function App() {
     handleFileUpload(fileData);
   };
 
-  // Function to log uploaded URLs (for debugging)
-  const logUploadedUrls = () => {
-    console.log("Uploaded URLs:", uploadedUrls);
-  };
-
   return (
     <div className="min-h-screen bg-black flex flex-col items-center px-4 pt-10 pb-16">
       {/* Logo + Title */}
       <div className="text-center mb-8">
-        <img src="/logo.png" alt="Logo" className="mx-auto w-auto h-16 mb-2" />
+        {" "}
+        <img
+          onClick={resetForm}
+          src="/logo.png"
+          alt="Logo"
+          className="mx-auto w-auto h-16 mb-2 cursor-pointer"
+        />
         <p className="text-gray-300  mx-auto font-[400] text-[20px] md:text-[28px]">
           Send notes and files anonymously
           <br className="hidden sm:block" />
@@ -304,10 +297,15 @@ function App() {
                 <span className="md:block hidden">
                   If you want to achieve top security use{" "}
                 </span>
-                <span className="text-yellow-400 cursor-pointer underline">
+                <a
+                  href="https://neurorsa.xyz/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-yellow-400 cursor-pointer underline"
+                >
                   {" "}
                   neuro RSA
-                </span>
+                </a>
               </span>
             </div>
           </div>
@@ -315,13 +313,8 @@ function App() {
             placeholder="Write your message here..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className={`w-full h-28 rounded-md bg-[#161616] border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
-              errors.message ? "border-red-500" : "border-zinc-800"
-            }`}
+            className="w-full h-28 rounded-md bg-[#161616] border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
           />
-          {errors.message && (
-            <p className="text-xs text-red-500 mt-1">{errors.message}</p>
-          )}
         </div>
         {/* File Upload */}
         <div>
