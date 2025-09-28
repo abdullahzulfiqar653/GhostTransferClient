@@ -2,7 +2,7 @@ import axios from "axios";
 import moment from "moment-timezone";
 
 // Base API configuration
-const API_BASE_URL = "https://dev.api.ghosttransfer.tech";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://dev.api.ghosttransfer.tech";
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -98,6 +98,8 @@ export const generateShareUrl = async ({
     console.log("Generating share URL with params:", requestBody);
 
     const response = await apiClient.post("/api/file-share/generate-url/", requestBody);
+
+    console.log("API Response:", response.data);
     return response.data;
 };
 
@@ -177,5 +179,8 @@ export const formatBytes = (bytes) => {
     const value = bytes / Math.pow(1024, i);
     return `${value.toFixed(value >= 100 || i === 0 ? 0 : 1)} ${sizes[i]}`;
 };
+
+// Export API base URL for use in other components
+export { API_BASE_URL };
 
 export default apiClient;

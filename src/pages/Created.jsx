@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FiDownload, FiTrash2 } from "react-icons/fi";
 import { IoCopyOutline, IoCheckmarkOutline } from "react-icons/io5";
 import { Creat, Url } from "../assets/Icons";
+import { API_BASE_URL } from "../services/api";
 // No storage; read data from navigation state
 
 export default function Created() {
@@ -17,9 +18,9 @@ export default function Created() {
   }, [location.state]);
 
   const copyUrl = async () => {
-    if (!data?.secretUrl) return;
+    if (!URL) return;
     try {
-      await navigator.clipboard.writeText(data.secretUrl);
+      await navigator.clipboard.writeText(URL);
       setCopied(true);
       setTimeout(() => setCopied(false), 1000);
     } catch (_) {}
@@ -45,6 +46,8 @@ export default function Created() {
     );
   }
 
+  const URL = `${API_BASE_URL}/api/share/${data?.id}`;
+
   return (
     <div className="min-h-screen bg-black flex flex-col items-center px-4 pt-10 pb-16">
       <div className="text-center mb-8">
@@ -59,7 +62,7 @@ export default function Created() {
             <input
               type="text"
               readOnly
-              value={data.secretUrl}
+              value={URL}
               className="w-full rounded-md bg-[#161616] border border-zinc-800 text-gray-300 p-3 pr-12"
             />
             <button
@@ -79,7 +82,7 @@ export default function Created() {
               alt="QR"
               className="w-48 h-48 border-6 border-white"
               src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                data.secretUrl
+                data?.id
               )}`}
             />
           </div>
@@ -87,7 +90,7 @@ export default function Created() {
             <FiDownload className="text-xl" />
             <a
               href={`https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=${encodeURIComponent(
-                data.secretUrl
+                data?.id
               )}`}
               download="qrcode.png"
               className="underline"

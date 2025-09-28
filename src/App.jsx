@@ -110,13 +110,13 @@ function App() {
 
       console.log("API Response:", result);
 
-      // Extract ID and URL from response
-      const id =
-        result.id || result.url || Math.random().toString(36).slice(2, 7);
-      const url = result.url || `https://www.gtransfer.io/${id}`;
-
       // Navigate to created page with navigation state
-      navigate(`/created`, { state: { id, secretUrl: url, result } });
+      navigate(`/created`, {
+        state: {
+          id: result.id,
+          result: result,
+        },
+      });
     } catch (error) {
       console.error("Error creating secret:", error);
       setErrors((prev) => ({
