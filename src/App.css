@@ -67,3 +67,12 @@
 .focus\:ring-brand:focus {
     --tw-ring-color: var(--brand);
 }
+
+.spinner.done .tick {
+    display: block;
+}
+
+.spinner.done div {
+    display: none;
+    /* hide both white + blue rings */
+}

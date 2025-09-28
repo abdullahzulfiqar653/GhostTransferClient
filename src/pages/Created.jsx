@@ -45,8 +45,6 @@ export default function Created() {
     );
   }
 
-  const { secretUrl } = data;
-
   return (
     <div className="min-h-screen bg-black flex flex-col items-center px-4 pt-10 pb-16">
       <div className="text-center mb-8">
@@ -61,7 +59,7 @@ export default function Created() {
             <input
               type="text"
               readOnly
-              value={secretUrl}
+              value={data.secretUrl}
               className="w-full rounded-md bg-[#161616] border border-zinc-800 text-gray-300 p-3 pr-12"
             />
             <button
@@ -81,7 +79,7 @@ export default function Created() {
               alt="QR"
               className="w-48 h-48"
               src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                secretUrl
+                data.secretUrl
               )}`}
             />
           </div>
@@ -89,7 +87,7 @@ export default function Created() {
             <FiDownload className="text-xl" />
             <a
               href={`https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=${encodeURIComponent(
-                secretUrl
+                data.secretUrl
               )}`}
               download="qrcode.png"
               className="underline"

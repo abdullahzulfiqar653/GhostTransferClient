@@ -1,10 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
-import Upload, { Creat, Url, Warn } from "./assets/Icons";
+import Upload, { Warn } from "./assets/Icons";
 import { PiWarningCircleLight } from "react-icons/pi";
 import { FiDownload, FiTrash2 } from "react-icons/fi";
-import { IoCopyOutline, IoCheckmarkOutline } from "react-icons/io5";
+import {
+  uploadFile,
+  generateShareUrl,
+  calculateExpiration,
+  formatBytes,
+} from "./services/api";
 
 function App() {
   const navigate = useNavigate();
@@ -35,6 +40,10 @@ function App() {
   const lifetimeRef = useRef(null);
   const [isViewsOpen, setIsViewsOpen] = useState(false);
   const viewsRef = useRef(null);
+  const [uploadingFiles, setUploadingFiles] = useState(new Set());
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [successFiles, setSuccessFiles] = useState(new Set());
+  const [uploadedUrls, setUploadedUrls] = useState([]);
 
   const viewOptions = [
     { value: "unlimited", label: "∞" },
@@ -70,29 +79,11 @@ function App() {
     setMaxViews(e.target.value);
   };
 
-  const incrementViews = () => {
-    setMaxViews((prev) => String(clampViews(prev) + 1));
-  };
-
-  const decrementViews = () => {
-    setMaxViews((prev) => String(Math.max(1, clampViews(prev) - 1)));
-  };
-
-  const toggleUnlimitedViews = () => {
-    setIsUnlimitedViews((prev) => {
-      const next = !prev;
-      if (next) {
-        setMaxViews("");
-      } else {
-        setMaxViews((val) => String(clampViews(val || 1)));
-      }
-      return next;
-    });
-  };
-
   const validate = () => {
     const nextErrors = {};
     if (!message.trim()) nextErrors.message = "Message is required";
+    if (uploadedUrls.length === 0)
+      nextErrors.files = "Please upload at least one file";
     if (!isUnlimitedViews) {
       if (!maxViews || clampViews(maxViews) < 1)
         nextErrors.maxViews = "Enter at least 1 view";
@@ -103,25 +94,41 @@ function App() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const createSecret = () => {
+  const createSecret = async () => {
     if (!validate()) return;
-    const id = Math.random().toString(36).slice(2, 7);
-    const url = `https://www.gtransfer.io/${id}`;
-    setSecretUrl(url);
-    setCreated(true);
 
-    // Navigate to created page with navigation state (no local storage)
-    navigate(`/created`, { state: { id, secretUrl: url } });
-  };
-
-  const copyUrl = async () => {
-    if (!secretUrl) return;
     try {
-      await navigator.clipboard.writeText(secretUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1000);
-    } catch (e) {
-      // no-op fallback
+      // Calculate expiration time and timezone
+      const { expiresAt, timezone } = calculateExpiration(lifetime);
+
+      // Generate share URL
+      const result = await generateShareUrl({
+        files: uploadedUrls,
+        password: password || null,
+        maxViews: isUnlimitedViews ? null : parseInt(maxViews) || null,
+        expiresAt,
+        allowedIp: ipRestrictions.trim() || null,
+        timezone,
+      });
+
+      console.log("API Response:", result);
+
+      // Extract ID and URL from response
+      const id =
+        result.id || result.url || Math.random().toString(36).slice(2, 7);
+      const url = result.url || `https://www.gtransfer.io/${id}`;
+
+      setSecretUrl(url);
+      setCreated(true);
+
+      // Navigate to created page with navigation state
+      navigate(`/created`, { state: { id, secretUrl: url, result } });
+    } catch (error) {
+      console.error("Error creating secret:", error);
+      setErrors((prev) => ({
+        ...prev,
+        api: "Failed to create secret link. Please try again.",
+      }));
     }
   };
 
@@ -137,6 +144,84 @@ function App() {
     setCreated(false);
     setSecretUrl("");
     setFiles([]);
+    setUploadingFiles(new Set());
+    setUploadProgress({});
+    setSuccessFiles(new Set());
+    setUploadedUrls([]);
+  };
+
+  const handleFileUpload = async (fileData) => {
+    try {
+      setUploadingFiles((prev) => new Set(prev).add(fileData.id));
+
+      // Start progress simulation
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 15; // Random increment between 0-15
+        if (progress > 90) progress = 90; // Don't go to 100% until upload completes
+        setUploadProgress((prev) => ({ ...prev, [fileData.id]: progress }));
+      }, 200);
+
+      // Upload file using API service
+      const result = await uploadFile(fileData.file, false);
+
+      // Complete the progress bar
+      clearInterval(progressInterval);
+      setUploadProgress((prev) => ({ ...prev, [fileData.id]: 100 }));
+
+      // Add the URL to the uploaded URLs array
+      if (result.url) {
+        setUploadedUrls((prev) => [...prev, result.url]);
+      }
+
+      // Show success tick for 1 second
+      setSuccessFiles((prev) => new Set(prev).add(fileData.id));
+
+      setTimeout(() => {
+        setSuccessFiles((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(fileData.id);
+          return newSet;
+        });
+        setUploadingFiles((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(fileData.id);
+          return newSet;
+        });
+      }, 1000);
+
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileData.id
+            ? { ...f, status: "success", uploadResult: result }
+            : f
+        )
+      );
+    } catch (error) {
+      console.error("Upload error:", error);
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileData.id
+            ? { ...f, status: "error", error: error.message }
+            : f
+        )
+      );
+    } finally {
+      // Only clean up if not in success state (success cleanup is handled in setTimeout)
+      if (!successFiles.has(fileData.id)) {
+        setUploadingFiles((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(fileData.id);
+          return newSet;
+        });
+      }
+      // Clean up progress
+      setUploadProgress((prev) => {
+        const newProgress = { ...prev };
+        delete newProgress[fileData.id];
+        return newProgress;
+      });
+    }
   };
 
   const handleFileList = (fileList) => {
@@ -148,6 +233,11 @@ function App() {
       status: "ready",
     }));
     setFiles((prev) => [...prev, ...incoming]);
+
+    // Start uploading each file immediately
+    incoming.forEach((fileData) => {
+      handleFileUpload(fileData);
+    });
   };
 
   const onFileInputChange = (e) => {
@@ -172,12 +262,19 @@ function App() {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const formatBytes = (bytes) => {
-    if (!bytes && bytes !== 0) return "";
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = bytes === 0 ? 0 : Math.floor(Math.log(bytes) / Math.log(1024));
-    const value = bytes / Math.pow(1024, i);
-    return `${value.toFixed(value >= 100 || i === 0 ? 0 : 1)} ${sizes[i]}`;
+  const retryUpload = (fileData) => {
+    // Reset the file status to ready and start upload again
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === fileData.id ? { ...f, status: "ready", error: null } : f
+      )
+    );
+    handleFileUpload(fileData);
+  };
+
+  // Function to log uploaded URLs (for debugging)
+  const logUploadedUrls = () => {
+    console.log("Uploaded URLs:", uploadedUrls);
   };
 
   return (
@@ -186,9 +283,9 @@ function App() {
       <div className="text-center mb-8">
         <img src="/logo.png" alt="Logo" className="mx-auto w-auto h-16 mb-2" />
         <p className="text-gray-300  mx-auto font-[400] text-[20px] md:text-[28px]">
-          Send notes and files anonymously with self-
+          Send notes and files anonymously
           <br className="hidden sm:block" />
-          destruct system
+          with self-destruct system
         </p>
       </div>
 
@@ -215,7 +312,7 @@ function App() {
             placeholder="Write your message here..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className={`w-full h-28 rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
+            className={`w-full h-28 rounded-md bg-[#161616] border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
               errors.message ? "border-red-500" : "border-zinc-800"
             }`}
           />
@@ -226,6 +323,9 @@ function App() {
         {/* File Upload */}
         <div>
           <label className="text-white block mb-2">Upload a File</label>
+          {errors.files && (
+            <p className="text-xs text-red-500 mb-2">{errors.files}</p>
+          )}
           {files.length === 0 ? (
             <label
               onDrop={onDrop}
@@ -269,39 +369,97 @@ function App() {
               </label>
 
               <div className="md:col-span-2 h-[220px] overflow-auto custom-scrollbar grid grid-cols-2 lg:grid-cols-3 gap-4">
-                {files.map((f) => (
-                  <div
-                    key={f.id}
-                    className={`rounded-md border ${
-                      f.status === "error"
-                        ? "border-red-500"
-                        : "border-zinc-800"
-                    } bg-black/80 px-4 py-3 text-gray-200 relative`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm truncate">{f.name}</p>
-                        <p className="text-xs text-gray-400">
-                          {formatBytes(f.size)}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(f.id)}
-                        className="cursor-pointer"
-                        title="Remove"
-                      >
-                        <FiTrash2 className="text-red-800" />
-                      </button>
+                {files.map((f) => {
+                  const isUploading = uploadingFiles.has(f.id);
+                  const isSuccess = successFiles.has(f.id);
+                  const isError = f.status === "error";
+
+                  return (
+                    <div
+                      key={f.id}
+                      className={`rounded-md border h-[59px] ${
+                        isError
+                          ? "border-red-500 hover:border-red-400 hover:bg-red-900/20"
+                          : "border-zinc-800"
+                      } bg-black/80 px-4 py-3 text-gray-200 relative transition-colors`}
+                    >
+                      {isUploading ? (
+                        // Show loader during upload
+                        <div className="flex items-center h-full gap-2">
+                          <div className="w-[30%] bg-[#9C1EE9] h-full rounded-md flex justify-center items-center">
+                            <div className="spinner relative w-5 h-5">
+                              <div className="absolute inset-0 rounded-full border-3 border-white"></div>
+                              <div className="absolute inset-0 rounded-full border-3 border-gray-400 border-t-transparent animate-spin"></div>
+                            </div>
+                          </div>
+                          <div className="flex-1 bg-gray-700 rounded-full h-1">
+                            <div
+                              className="bg-[#28E470] h-1 rounded-full transition-all duration-300 ease-out"
+                              style={{ width: `${uploadProgress[f.id] || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ) : isSuccess ? (
+                        // Show success tick for 1 second
+                        <div className="flex items-center h-full gap-2">
+                          <div className="w-[30%] bg-[#9C1EE9] h-full rounded-md flex justify-center items-center">
+                            <svg
+                              className="w-5 h-5 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          </div>
+                          <div className="flex-1 bg-green-500 rounded-full h-1"></div>
+                        </div>
+                      ) : (
+                        // Show file info when not uploading
+                        <>
+                          <div className="flex items-start justify-between gap-3">
+                            <div
+                              className={`min-w-0 flex-1 ${
+                                isError ? "cursor-pointer" : ""
+                              }`}
+                              onClick={
+                                isError ? () => retryUpload(f) : undefined
+                              }
+                              title={isError ? "Click to retry upload" : ""}
+                            >
+                              <p className="text-sm truncate">{f.name}</p>
+                              <p className="text-xs text-gray-400">
+                                {formatBytes(f.size)}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(f.id)}
+                              className="cursor-pointer flex-shrink-0"
+                              title="Remove"
+                            >
+                              <FiTrash2 className="text-red-800" />
+                            </button>
+                          </div>
+
+                          {isError && (
+                            <div className="mt-3 text-xs -ml-3 text-red-800 flex items-center gap-1">
+                              <PiWarningCircleLight className="inline" />{" "}
+                              <span className="hover:underline">
+                                Failed, click to retry
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
-                    {f.status === "error" && (
-                      <p className="mt-2 text-xs text-red-500 flex items-center gap-1">
-                        <PiWarningCircleLight className="inline" /> Failed, try
-                        again
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -489,7 +647,6 @@ function App() {
             </label>
             <input
               type="text"
-              placeholder="Enter allowed IPs"
               value={ipRestrictions}
               onChange={(e) => setIpRestrictions(e.target.value)}
               className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
