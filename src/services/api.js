@@ -61,6 +61,7 @@ export const uploadFile = async (file, isPublic = false) => {
  * Generate a secret share URL
  * @param {Object} params - Share parameters
  * @param {string[]} params.files - Array of file URLs
+ * @param {string|null} params.message - Optional message
  * @param {string|null} params.password - Optional password
  * @param {number|null} params.maxViews - Maximum number of views
  * @param {string|null} params.expiresAt - Expiration datetime (naive format)
@@ -70,6 +71,7 @@ export const uploadFile = async (file, isPublic = false) => {
  */
 export const generateShareUrl = async ({
     files,
+    message = null,
     password = null,
     maxViews = null,
     expiresAt = null,
@@ -78,6 +80,7 @@ export const generateShareUrl = async ({
 }) => {
     const requestBody = {
         files,
+        message,
         password,
         max_views: maxViews,
         expires_at: expiresAt,

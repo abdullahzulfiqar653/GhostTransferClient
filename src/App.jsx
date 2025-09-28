@@ -81,7 +81,6 @@ function App() {
 
   const validate = () => {
     const nextErrors = {};
-    if (!message.trim()) nextErrors.message = "Message is required";
     if (uploadedUrls.length === 0)
       nextErrors.files = "Please upload at least one file";
     if (!isUnlimitedViews) {
@@ -104,6 +103,7 @@ function App() {
       // Generate share URL
       const result = await generateShareUrl({
         files: uploadedUrls,
+        message: message.trim() || null,
         password: password || null,
         maxViews: isUnlimitedViews ? null : parseInt(maxViews) || null,
         expiresAt,
@@ -293,7 +293,10 @@ function App() {
       <div className="w-full max-w-4xl bg-[#0e0e0e] border border-zinc-800 rounded-2xl shadow-xl p-6 md:p-8 space-y-6">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-white">New Message</label>
+            <label className="text-white">
+              New Message{" "}
+              <span className="text-gray-500 text-sm">( Optional )</span>
+            </label>
             <div className="flex items-center gap-2 text-xs text-gray-400">
               <Warn />
               <span className="flex items-center  gap-1">
