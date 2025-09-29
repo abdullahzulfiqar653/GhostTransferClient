@@ -24,6 +24,7 @@ function App() {
     { value: "3d", label: "3 Day" },
     { value: "7d", label: "7 Day" },
   ];
+  const [showTooltip, setShowTooltip] = useState(false);
   const [lifetime, setLifetime] = useState("");
   const [maxViews, setMaxViews] = useState("");
   const [isUnlimitedViews, setIsUnlimitedViews] = useState(true);
@@ -90,10 +91,9 @@ function App() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  // Check if button should be disabled
   const isButtonDisabled = () => {
     // No files uploaded
-    if (uploadedUrls.length === 0) return true;
+    if (files.length === 0) return true;
 
     // Files are currently uploading
     if (uploadingFiles.size > 0) return true;
@@ -302,9 +302,35 @@ function App() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-white">New Message </label>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <Warn />
-              <span className="flex items-center  gap-1">
+            <div className="flex items-center gap-2 text-xs text-gray-400 relative">
+              <div
+                className="relative"
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+                onClick={() => setShowTooltip((prev) => !prev)}
+              >
+                <Warn className="text-lg cursor-pointer" />
+
+                {/* Tooltip */}
+                <div
+                  className={`absolute left-1/2 top-full mt-2 -translate-x-1/2 w-[120px] p-2 rounded-md bg-black text-white text-[10px] shadow-md transition-opacity duration-200 md:hidden ${
+                    showTooltip ? "opacity-100 visible" : "opacity-0 invisible"
+                  }`}
+                >
+                  Tip: If you want to achieve top security use{" "}
+                  <a
+                    href="https://neurorsa.xyz/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white underline"
+                  >
+                    neuro RSA
+                  </a>
+                  <div className="absolute left-1/2 -top-1 w-4 h-4 bg-black rotate-45 -translate-x-1/2"></div>
+                </div>
+              </div>
+
+              <span className="flex items-center gap-1">
                 <span className="text-white md:block hidden">Tip: </span>
                 <span className="md:block hidden">
                   If you want to achieve top security use{" "}
@@ -476,7 +502,10 @@ function App() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Lifetime */}
           <div>
-            <label className="text-white block mb-2">Lifetime</label>
+            <label className="text-white w-full mb-2 flex justify-between items-center">
+              <span>Lifetime</span>
+              <span className="text-gray-500 text-sm">( Optional )</span>
+            </label>
             <div className="relative" ref={lifetimeRef}>
               <button
                 type="button"
@@ -542,8 +571,14 @@ function App() {
                 type="number"
                 inputMode="numeric"
                 min={1}
+                max={999}
                 value={isUnlimitedViews ? "" : maxViews}
-                onChange={handleMaxViewsChange}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "" || (Number(val) <= 999 && val.length <= 3)) {
+                    handleMaxViewsChange(e);
+                  }
+                }}
                 disabled={isUnlimitedViews}
                 placeholder={isUnlimitedViews ? "∞" : "Enter views"}
                 className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 pr-10 focus:outline-none focus:ring-2 focus:ring-brand [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
@@ -616,7 +651,7 @@ function App() {
         {/* Password + Confirm */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-white mb-2">
+            <label className="text-white w-full mb-2 flex justify-between items-center">
               <span> Password </span>
               <span className="text-gray-500 text-sm">( Optional )</span>
             </label>
@@ -628,7 +663,7 @@ function App() {
             />
           </div>
           <div>
-            <label className="block text-white mb-2">
+            <label className="text-white w-full mb-2 flex justify-between items-center">
               <span> Confirm Password </span>
               <span className="text-gray-500 text-sm">( Optional )</span>
             </label>
@@ -664,10 +699,10 @@ function App() {
             <button
               onClick={createSecret}
               disabled={isButtonDisabled()}
-              className={`w-full font-semibold px-8 py-2.5 rounded-md transition ${
+              className={`w-full font-semibold px-8 py-3 rounded-md transition ${
                 isButtonDisabled()
                   ? "bg-purple-700 text-gray-400 cursor-not-allowed"
-                  : "bg-brand hover:bg-brand-dark text-white cursor-pointer"
+                  : "bg-brand text-white cursor-pointer hover:py-3.5 hover:bg-gradient-to-r hover:from-[#9C1EE9] hover:via-[#F82BAB] hover:to-[#FFC94B]"
               }`}
             >
               Create a Secret Link

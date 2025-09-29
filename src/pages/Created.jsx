@@ -77,7 +77,7 @@ export default function Created() {
 
         <div className="flex md:flex-row flex-col items-center justify-center gap-8 pt-2">
           <div className="md:ml-20">
-            <p className="text-gray-300 text-sm mb-2">Access with QR code</p>
+            <p className="text-gray-300 text-sm mb-2 text-center md:text-start">Access with QR code</p>
             <img
               alt="QR"
               className="w-48 h-48 border-6 border-white"
@@ -86,14 +86,14 @@ export default function Created() {
               )}`}
             />
           </div>
-          <div className="flex flex-col items-center gap-1 text-gray-400">
-            <FiDownload className="text-xl" />
+          <div className="flex flex-col items-center gap-1 group">
+            <FiDownload className="text-xl text-gray-400 group-hover:text-[#9C1EE9]" />
             <a
               href={`https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=${encodeURIComponent(
                 URL
               )}`}
               download="qrcode.png"
-              className="underline"
+              className="underline text-gray-400 group-hover:text-[#FB617C]"
             >
               Download
             </a>
