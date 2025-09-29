@@ -79,24 +79,41 @@ function App() {
 
   const validate = () => {
     const nextErrors = {};
-    if (uploadedUrls.length === 0)
+    if (uploadedUrls.length === 0 && message === "")
       nextErrors.files = "Please upload at least one file";
     if (!isUnlimitedViews) {
       if (!maxViews || clampViews(maxViews) < 1)
-        nextErrors.maxViews = "Enter at least 1 view";
+        nextErrors.max_views = "Enter at least 1 view";
     }
+    if (
+      password &&
+      !/^[A-Za-z0-9!@#$%^&*()_+={}:;"'<>?,.]{6,}$/.test(password)
+    ) {
+      nextErrors.password =
+        "Password must be at least 6 characters and contain only valid symbols.";
+    }
+
     if (password && password !== confirmPassword)
       nextErrors.confirmPassword = "Passwords do not match";
+
+    if (ipRestrictions.trim()) {
+      const ipv4Regex =
+        /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
+      if (!ipv4Regex.test(ipRestrictions.trim())) {
+        nextErrors.allowed_ip =
+          "Please enter a valid IPv4 address (e.g., 192.168.1.1)";
+      }
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
 
   const isButtonDisabled = () => {
     // No files uploaded
-    if (files.length === 0) return true;
-
-    // Files are currently uploading
-    if (uploadingFiles.size > 0) return true;
+    if ((files.length === 0 && message === "") || uploadingFiles.size > 0)
+      return true;
 
     // Any file has an error status
     const hasErrorFiles = files.some((f) => f.status === "error");
@@ -133,11 +150,18 @@ function App() {
         },
       });
     } catch (error) {
-      console.error("Error creating secret:", error);
-      setErrors((prev) => ({
-        ...prev,
-        api: "Failed to create secret link. Please try again.",
-      }));
+      if (error.response?.data) {
+        const backendErrors = {};
+        for (const [key, value] of Object.entries(error.response.data)) {
+          backendErrors[key] = Array.isArray(value) ? value[0] : String(value);
+        }
+        setErrors(backendErrors);
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          api: "Failed to create secret link. Please try again.",
+        }));
+      }
     }
   };
 
@@ -265,7 +289,8 @@ function App() {
     e.stopPropagation();
   };
 
-  const removeFile = (id) => {
+  const removeFile = (id, url) => {
+    setUploadedUrls((prev) => prev.filter((u) => u !== url));
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
@@ -291,8 +316,7 @@ function App() {
           className="mx-auto w-auto h-16 mb-2 cursor-pointer"
         />
         <p className="text-gray-300  mx-auto font-[400] text-[20px] md:text-[28px]">
-          Send notes and files anonymously
-          <br className="hidden sm:block" />
+          Send notes and files anonymously <br className="hidden sm:block" />
           with self-destruct system
         </p>
       </div>
@@ -473,7 +497,9 @@ function App() {
                             </div>
                             <button
                               type="button"
-                              onClick={() => removeFile(f.id)}
+                              onClick={() =>
+                                removeFile(f.id, f.uploadResult.url)
+                              }
                               className="cursor-pointer flex-shrink-0"
                               title="Remove"
                             >
@@ -511,11 +537,16 @@ function App() {
                 type="button"
                 onClick={() => setIsLifetimeOpen((v) => !v)}
                 className={`w-full flex items-center justify-between gap-2 rounded-md bg-black/80 border p-3 focus:outline-none focus:ring-2 focus:ring-brand text-gray-200 ${
-                  errors.lifetime ? "border-red-500" : "border-zinc-800"
+                  errors.expires_at ? "border-red-500" : "border-zinc-800"
                 }`}
                 aria-haspopup="listbox"
                 aria-expanded={isLifetimeOpen}
               >
+                {errors.expires_at && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.expires_at}
+                  </p>
+                )}
                 <span className="truncate">{selectedLifetimeLabel}</span>
                 <svg
                   className="h-4 w-4 text-gray-200"
@@ -582,9 +613,12 @@ function App() {
                 disabled={isUnlimitedViews}
                 placeholder={isUnlimitedViews ? "∞" : "Enter views"}
                 className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 pr-10 focus:outline-none focus:ring-2 focus:ring-brand [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                  errors.maxViews ? "border-red-500" : "border-zinc-800"
+                  errors.max_views ? "border-red-500" : "border-zinc-800"
                 } ${isUnlimitedViews ? "opacity-60 cursor-not-allowed" : ""}`}
               />
+              {errors.max_views && (
+                <p className="text-xs text-red-500 mt-1">{errors.max_views}</p>
+              )}
               <button
                 type="button"
                 onClick={() => setIsViewsOpen((v) => !v)}
@@ -658,9 +692,22 @@ function App() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) {
+                  setErrors((prev) => {
+                    const { password, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
+              className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
+                errors.password ? "border-red-500" : "border-zinc-800"
+              } `}
             />
+            {errors.password && (
+              <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+            )}
           </div>
           <div>
             <label className="text-white w-full mb-2 flex justify-between items-center">
@@ -670,7 +717,15 @@ function App() {
             <input
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (errors.confirmPassword) {
+                  setErrors((prev) => {
+                    const { confirmPassword, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
               className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
                 errors.confirmPassword ? "border-red-500" : "border-zinc-800"
               }`}
@@ -683,7 +738,7 @@ function App() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-          <div>
+          <div className="relative">
             <label className="text-white flex mb-2 justify-between items-center">
               <span> IP restrictions</span>
               <span className="text-gray-500 text-sm">( Optional )</span>
@@ -691,9 +746,23 @@ function App() {
             <input
               type="text"
               value={ipRestrictions}
-              onChange={(e) => setIpRestrictions(e.target.value)}
-              className="w-full rounded-md bg-black/80 border border-zinc-800 text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand"
+              onChange={(e) => {
+                setIpRestrictions(e.target.value);
+                if (errors.allowed_ip) {
+                  setErrors((prev) => {
+                    const { allowed_ip, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
+              className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand
+                ${errors.allowed_ip ? "border-red-500" : "border-zinc-800"}`}
             />
+            {errors.allowed_ip && (
+              <p className="absolute text-xs text-red-500 mt-1">
+                {errors.allowed_ip}
+              </p>
+            )}
           </div>
           <div>
             <button
