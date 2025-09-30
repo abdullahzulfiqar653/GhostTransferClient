@@ -95,14 +95,6 @@ function App() {
         "Password must be at least 6 characters and contain only valid symbols.";
     }
 
-    if (confirmPassword) {
-      if (!password) {
-        nextErrors.confirmPassword = "Password is required before confirming";
-      } else if (password !== confirmPassword) {
-        nextErrors.confirmPassword = "Passwords do not match";
-      }
-    }
-
     if (ipRestrictions.trim()) {
       const ipv4Regex =
         /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
@@ -706,8 +698,18 @@ function App() {
               type="password"
               value={password}
               onChange={(e) => {
-                setPassword(e.target.value);
-                if (errors.password) {
+                const val = e.target.value;
+                setPassword(val);
+                if (
+                  val &&
+                  !/^[A-Za-z0-9!@#$%^&*()_+={}:;"'<>?,.]{6,}$/.test(val)
+                ) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    password:
+                      "Password must be at least 6 characters and contain only valid symbols.",
+                  }));
+                } else {
                   setErrors((prev) => {
                     const { password, ...rest } = prev;
                     return rest;
@@ -731,8 +733,21 @@ function App() {
               type="password"
               value={confirmPassword}
               onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                if (errors.confirmPassword) {
+                let value = e.target.value;
+                setConfirmPassword(value);
+                if (value) {
+                  if (!password) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      confirmPassword: "Password is required before confirming",
+                    }));
+                  } else if (password !== value) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      confirmPassword: "Passwords do not match",
+                    }));
+                  }
+                } else {
                   setErrors((prev) => {
                     const { confirmPassword, ...rest } = prev;
                     return rest;
