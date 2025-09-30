@@ -79,20 +79,46 @@ function App() {
     setMaxViews(e.target.value);
   };
 
+  const validatePasswords = (password, confirmPassword) => {
+    let error = {};
+    if (
+      password &&
+      !/^[A-Za-z0-9!@#$%^&*()_+={}:;"'<>?,.]{6,}$/.test(password)
+    ) {
+      error.password =
+        "Password must be at least 6 characters and contain only valid symbols.";
+    }
+    if (confirmPassword) {
+      if (!password) {
+        error.confirmPassword = "Password is required before confirming";
+      } else if (password !== confirmPassword) {
+        error.confirmPassword = "Passwords do not match";
+      }
+    }
+
+    setErrors((prev) => ({ ...prev, ...error }));
+    if (!error.password) {
+      setErrors((prev) => {
+        const { password, ...rest } = prev;
+        return rest;
+      });
+    }
+    if (!error.confirmPassword) {
+      setErrors((prev) => {
+        const { confirmPassword, ...rest } = prev;
+        return rest;
+      });
+    }
+    return error;
+  };
+
   const validate = () => {
-    const nextErrors = {};
+    let nextErrors = {};
     if (uploadedUrls.length === 0 && message === "")
       nextErrors.files = "Please upload at least one file";
     if (!isUnlimitedViews) {
       if (!maxViews || clampViews(maxViews) < 1)
         nextErrors.max_views = "Enter at least 1 view";
-    }
-    if (
-      password &&
-      !/^[A-Za-z0-9!@#$%^&*()_+={}:;"'<>?,.]{6,}$/.test(password)
-    ) {
-      nextErrors.password =
-        "Password must be at least 6 characters and contain only valid symbols.";
     }
 
     if (ipRestrictions.trim()) {
@@ -104,6 +130,11 @@ function App() {
           "Please enter a valid IPv4 address (e.g., 192.168.1.1)";
       }
     }
+
+    nextErrors = {
+      ...nextErrors,
+      ...validatePasswords(password, confirmPassword),
+    };
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -700,21 +731,7 @@ function App() {
               onChange={(e) => {
                 const val = e.target.value;
                 setPassword(val);
-                if (
-                  val &&
-                  !/^[A-Za-z0-9!@#$%^&*()_+={}:;"'<>?,.]{6,}$/.test(val)
-                ) {
-                  setErrors((prev) => ({
-                    ...prev,
-                    password:
-                      "Password must be at least 6 characters and contain only valid symbols.",
-                  }));
-                } else {
-                  setErrors((prev) => {
-                    const { password, ...rest } = prev;
-                    return rest;
-                  });
-                }
+                validatePasswords(val, confirmPassword);
               }}
               className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
                 errors.password ? "border-red-500" : "border-zinc-800"
@@ -733,26 +750,9 @@ function App() {
               type="password"
               value={confirmPassword}
               onChange={(e) => {
-                let value = e.target.value;
-                setConfirmPassword(value);
-                if (value) {
-                  if (!password) {
-                    setErrors((prev) => ({
-                      ...prev,
-                      confirmPassword: "Password is required before confirming",
-                    }));
-                  } else if (password !== value) {
-                    setErrors((prev) => ({
-                      ...prev,
-                      confirmPassword: "Passwords do not match",
-                    }));
-                  }
-                } else {
-                  setErrors((prev) => {
-                    const { confirmPassword, ...rest } = prev;
-                    return rest;
-                  });
-                }
+                const val = e.target.value;
+                setConfirmPassword(val);
+                validatePasswords(password, val);
               }}
               className={`w-full rounded-md bg-black/80 border text-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-brand ${
                 errors.confirmPassword ? "border-red-500" : "border-zinc-800"
