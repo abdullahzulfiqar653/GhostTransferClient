@@ -90,7 +90,7 @@ function App() {
     }
     if (confirmPassword) {
       if (!password) {
-        error.confirmPassword = "Password is required before confirming";
+        error.password = "Password is required before confirming";
       } else if (password !== confirmPassword) {
         error.confirmPassword = "Passwords do not match";
       }
