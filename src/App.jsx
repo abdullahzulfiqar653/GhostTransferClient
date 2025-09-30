@@ -776,7 +776,7 @@ function App() {
             <button
               onClick={createSecret}
               disabled={isButtonDisabled()}
-              className={`w-full flex justify-center items-center gap-2 font-semibold px-8 py-3 rounded-md transition ${
+              className={`w-full flex justify-center items-center gap-2 font-semibold px-8 py-3 mt-2 md:mt-0 rounded-md transition ${
                 isButtonDisabled()
                   ? "bg-purple-700 text-gray-300 cursor-not-allowed"
                   : "bg-brand text-white cursor-pointer hover:py-3.5 hover:bg-gradient-to-r hover:from-[#9C1EE9] hover:via-[#F82BAB] hover:to-[#FFC94B]"
