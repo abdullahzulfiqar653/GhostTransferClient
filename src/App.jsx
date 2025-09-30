@@ -95,8 +95,13 @@ function App() {
         "Password must be at least 6 characters and contain only valid symbols.";
     }
 
-    if (password && password !== confirmPassword)
-      nextErrors.confirmPassword = "Passwords do not match";
+    if (confirmPassword) {
+      if (!password) {
+        nextErrors.confirmPassword = "Password is required before confirming";
+      } else if (password !== confirmPassword) {
+        nextErrors.confirmPassword = "Passwords do not match";
+      }
+    }
 
     if (ipRestrictions.trim()) {
       const ipv4Regex =
@@ -755,7 +760,11 @@ function App() {
               type="text"
               value={ipRestrictions}
               onChange={(e) => {
-                setIpRestrictions(e.target.value);
+                const value = e.target.value;
+
+                if (/^[0-9.,:]*$/.test(value)) {
+                  setIpRestrictions(value);
+                }
                 if (errors.allowed_ip) {
                   setErrors((prev) => {
                     const { allowed_ip, ...rest } = prev;

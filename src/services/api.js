@@ -4,7 +4,7 @@ import moment from "moment-timezone";
 // Base API configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://dev.api.ghosttransfer.tech";
 
-const Secret_Link_Base_URL = "https://download.ghosttransfer.tech";
+const Secret_Link_Base_URL = "https://d.ghosttransfer.tech";
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
