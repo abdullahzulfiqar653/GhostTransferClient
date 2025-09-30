@@ -4,7 +4,8 @@ import moment from "moment-timezone";
 // Base API configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://dev.api.ghosttransfer.tech";
 
-// Create axios instance with default config
+const Secret_Link_Base_URL = "https://download.ghosttransfer.tech";
+
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 30000, // 30 seconds timeout
@@ -181,6 +182,6 @@ export const formatBytes = (bytes) => {
 };
 
 // Export API base URL for use in other components
-export { API_BASE_URL };
+export { API_BASE_URL, Secret_Link_Base_URL };
 
 export default apiClient;

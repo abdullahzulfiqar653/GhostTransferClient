@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FiDownload, FiTrash2 } from "react-icons/fi";
 import { IoCopyOutline, IoCheckmarkOutline } from "react-icons/io5";
 import { Creat, Url } from "../assets/Icons";
-import { API_BASE_URL } from "../services/api";
+import { Secret_Link_Base_URL } from "../services/api";
 // No storage; read data from navigation state
 
 export default function Created() {
@@ -46,7 +46,7 @@ export default function Created() {
     );
   }
 
-  const URL = `${API_BASE_URL}/api/share/${data?.id}`;
+  const URL = `${Secret_Link_Base_URL}/${data?.id}/`;
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center px-4 pt-10 pb-16">

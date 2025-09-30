@@ -10,6 +10,7 @@ import {
   calculateExpiration,
   formatBytes,
 } from "./services/api";
+import { ThreeDots } from "react-loader-spinner";
 
 function App() {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ function App() {
   const [isLifetimeOpen, setIsLifetimeOpen] = useState(false);
   const lifetimeRef = useRef(null);
   const [isViewsOpen, setIsViewsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const viewsRef = useRef(null);
   const [uploadingFiles, setUploadingFiles] = useState(new Set());
   const [uploadProgress, setUploadProgress] = useState({});
@@ -112,10 +114,13 @@ function App() {
 
   const isButtonDisabled = () => {
     // No files uploaded
-    if ((files.length === 0 && message === "") || uploadingFiles.size > 0)
+    if (
+      (files.length === 0 && message === "") ||
+      uploadingFiles.size > 0 ||
+      loading
+    )
       return true;
 
-    // Any file has an error status
     const hasErrorFiles = files.some((f) => f.status === "error");
     if (hasErrorFiles) return true;
 
@@ -126,6 +131,7 @@ function App() {
     if (!validate()) return;
 
     try {
+      setLoading(true);
       // Calculate expiration time and timezone
       const { expiresAt, timezone } = calculateExpiration(lifetime);
 
@@ -162,6 +168,8 @@ function App() {
           api: "Failed to create secret link. Please try again.",
         }));
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -768,13 +776,14 @@ function App() {
             <button
               onClick={createSecret}
               disabled={isButtonDisabled()}
-              className={`w-full font-semibold px-8 py-3 rounded-md transition ${
+              className={`w-full flex justify-center items-center gap-2 font-semibold px-8 py-3 rounded-md transition ${
                 isButtonDisabled()
-                  ? "bg-purple-700 text-gray-400 cursor-not-allowed"
+                  ? "bg-purple-700 text-gray-300 cursor-not-allowed"
                   : "bg-brand text-white cursor-pointer hover:py-3.5 hover:bg-gradient-to-r hover:from-[#9C1EE9] hover:via-[#F82BAB] hover:to-[#FFC94B]"
               }`}
             >
               Create a Secret Link
+              {loading && <ThreeDots height="25" width="25" color="white" />}
             </button>
           </div>
         </div>
