@@ -131,6 +131,10 @@ function App() {
       }
     }
 
+    if (password && !confirmPassword) {
+      nextErrors.confirmPassword = "Please confirm your password";
+    }
+
     nextErrors = {
       ...nextErrors,
       ...validatePasswords(password, confirmPassword),
