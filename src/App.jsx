@@ -153,6 +153,13 @@ function App() {
     )
       return true;
 
+    const isUploading = files.some((f) => f.status === "uploading");
+    if (isUploading) return true;
+
+    const notAllSuccess =
+      files.length > 0 && files.some((f) => f.status !== "success");
+    if (notAllSuccess) return true;
+
     const hasErrorFiles = files.some((f) => f.status === "error");
     if (hasErrorFiles) return true;
 
